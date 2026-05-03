@@ -3,8 +3,6 @@ import pandas as pd
 import random
 import requests
 
-# --- CONFIGURACIÓN DE SEGURIDAD (Se lee desde la pestaña de Secrets) ---
-# Ya no pegamos el link aquí directamente por seguridad.
 try:
     URL_API = st.secrets["URL_API"]
 except:
@@ -94,7 +92,7 @@ with st.expander("📝 Formulario de Registro", expanded=True):
 st.write("---")
 with st.expander("🔐 Acceso Administrador"):
     clave = st.text_input("Contraseña de seguridad:", type="password")
-    if clave == "admin123":
+    if clave == st.secrets["PASSWORD_ADMIN"]:
         st.subheader("📊 Gestión de Participantes")
         df_admin = cargar_datos_nube()
         
