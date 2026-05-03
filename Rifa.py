@@ -1,59 +1,69 @@
 import streamlit as st
+import pandas as pd
+import requests
 
-hide_style = """
-    <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    /* Esto oculta el botón de "Deploy" y otros elementos de la barra inferior */
-    .stAppDeployButton {display:none;}
-    </style>
-"""
-st.markdown(hide_style, unsafe_allow_html=True)
+# --- 1. CONFIGURACIÓN VISUAL (OCULTAR ANUNCIO) ---
+st.set_page_config(page_title="Registro de Rifa - Heliu", page_icon="🎫")
 
-# --- 2. CONTADOR DE PARTICIPANTES ---
-try:
-    df_actual = cargar_datos_nube()
-    total_inscritos = len(df_actual)
-except:
-    total_inscritos = 0
+hide_st_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            .stAppDeployButton {display:none;}
+            </style>
+            """
+st.markdown(hide_st_style, unsafe_allow_html=True)
 
-LIMITE_RIFA = 100 # Puedes cambiar este número al límite que quieras
-cupos_libres = LIMITE_RIFA - total_inscritos
+# --- 2. LÓGICA DE DATOS Y CONTADOR ---
+# Función para cargar datos (necesaria para el contador)
+def cargar_datos_nube():
+    url = st.secrets["URL_API"]
+    response = requests.get(url)
+    if response.status_code == 200:
+        return pd.DataFrame(response.json())
+    return pd.DataFrame()
 
-# Mostrar el contador de forma visual
-st.subheader(f"📊 Estado de la Rifa: {total_inscritos} / {LIMITE_RIFA} participantes")
-st.progress(total_inscritos / LIMITE_RIFA)
+df_admin = cargar_datos_nube()
+total_registrados = len(df_admin)
+LIMITE_PARTICIPANTES = 50 # Basado en tu programa de rifa de 50 personas
 
-if cupos_libres <= 0:
-    st.error("🚫 ¡Lo sentimos! Ya no quedan cupos disponibles.")
+# --- 3. INTERFAZ DE USUARIO ---
+st.title("🎫 Registro de Rifa")
+st.write(f"### 📊 Cupos: {total_registrados} / {LIMITE_PARTICIPANTES}")
+st.progress(total_registrados / LIMITE_PARTICIPANTES)
+
+if total_registrados >= LIMITE_PARTICIPANTES:
+    st.error("🚫 Lo sentimos, el cupo de la rifa está lleno.")
 else:
-    st.info(f"✅ ¡Aún quedan {cupos_libres} lugares! Regístrate abajo.")
-
-    # --- 3. FORMULARIO CON VALIDACIÓN ---
-    with st.form("registro_rifa"):
-        nombre = st.text_input("Nombre Completo:")
+    with st.container():
+        nombre_input = st.text_input("Nombre Completo:")
+        # Integración de límite de caracteres y solo números
+        tel_input = st.text_input("Número de Teléfono:", max_chars=10, help="Ingresa los 10 dígitos")
         
-        # Validación: Solo números y límite de caracteres (ej. 10 para un cel)
-        telefono = st.text_input(
-            "Número de Teléfono:", 
-            max_chars=10, 
-            help="Ingresa solo los 10 dígitos de tu número"
-        )
-        
-        btn_enviar = st.form_submit_button("Participar ahora")
-
-        if btn_enviar:
-            # Verificación táctica: ¿Es realmente un número?
-            if not telefono.isdigit():
+        if st.button("Registrar"):
+            # Validaciones integradas
+            if not tel_input.isdigit():
                 st.error("⚠️ Error: El teléfono debe contener solo números.")
-            elif len(telefono) < 10:
+            elif len(tel_input) < 10:
                 st.error("⚠️ Error: El número debe tener 10 dígitos.")
-            elif nombre == "":
-                st.warning("⚠️ Por favor, pon tu nombre.")
+            elif nombre_input == "":
+                st.warning("⚠️ Por favor, ingresa tu nombre.")
             else:
-                # Aquí va tu función de guardar_en_nube
-                exito = guardar_en_nube(nombre, telefono)
+                # Tu lógica original de envío
+                num = total_registrados + 1
+                exito = guardar_en_nube(nombre_input, tel_input, num)
+                
                 if exito:
-                    st.success("¡Registro exitoso! ¡Mucha suerte!")
+                    st.success(f"✅ ¡Registro exitoso! Tu número es: **{num}**")
                     st.balloons()
+                else:
+                    st.error("Error al conectar con la nube.")
+
+# --- PANEL DE ADMINISTRADOR ---
+with st.expander("🔐 Acceso Administrador"):
+    clave = st.text_input("Contraseña de seguridad:", type="password")
+    # Uso de la llave secreta para mayor seguridad
+    if clave == st.secrets["PASSWORD_ADMIN"]:
+        st.subheader("📊 Gestión de Participantes")
+        st.dataframe(df_admin, use_container_width=True)
