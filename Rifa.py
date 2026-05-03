@@ -74,7 +74,12 @@ st.markdown(f"""
     <p><b>🔢 Cuenta:</b> {CUENTA_PAGO}</p>
     <p><b>📱 Teléfono de contacto:</b> {TEL_PAGO}</p>
     <hr style='border-color:#333;'>
-    <p style='font-size: 0.9em; color: #bbb;'>AL registrate .</p>
+<p style='font-size: 0.9em; color: #bbb;'>
+1. <b>Realiza tu transferencia:</b> Usa los datos de cuenta de arriba.<br><br>
+2. <b>Concepto de pago:</b> Es vital que pongas tu nombre completo como concepto.<br><br>
+3. <b>Confirma tu registro:</b> Llena el formulario de abajo para generar tu número.<br><br>
+4. <b>Envía tu comprobante:</b> Manda la captura al número de contacto para activar tu boleto.
+</p>
 </div>
 """, unsafe_allow_html=True)
 
