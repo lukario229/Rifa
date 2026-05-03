@@ -10,7 +10,6 @@ try:
     NOMBRE_PAGO = st.secrets["NOMBRE_PAGO"]
     BANCO_PAGO = st.secrets["BANCO_PAGO"]
     CUENTA_PAGO = st.secrets["CUENTA_PAGO"]
-    CLABE_PAGO = st.secrets["CLABE_PAGO"]
     # Ahora usamos el secreto del teléfono en la vista pública
     TEL_PAGO = st.secrets["TEL_PAGO"] 
 except:
