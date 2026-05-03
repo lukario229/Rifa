@@ -7,7 +7,7 @@ import requests
 try:
     URL_API = st.secrets["URL_API"]
     PASSWORD_ADMIN = st.secrets["PASSWORD_ADMIN"]
-    # Nuevos secretos para los datos de pago
+    # Datos de pago desde Secrets
     NOMBRE_PAGO = st.secrets["NOMBRE_PAGO"]
     BANCO_PAGO = st.secrets["BANCO_PAGO"]
     CUENTA_PAGO = st.secrets["CUENTA_PAGO"]
@@ -59,7 +59,7 @@ def guardar_en_nube(nombre, telefono, boleto):
 # --- LÓGICA DE CONTROL ---
 df_actual = cargar_datos_nube()
 total_inscritos = len(df_actual)
-LIMITE = 50 # Límite para tu proyecto universitario
+LIMITE = 50 
 
 # --- VISTA PÚBLICA ---
 st.title("🎟️ Gran Rifa Solidaria")
@@ -68,16 +68,18 @@ st.title("🎟️ Gran Rifa Solidaria")
 st.write(f"### 📊 Cupos llenos: {total_inscritos} / {LIMITE}")
 st.progress(total_inscritos / LIMITE)
 
-# 4. DATOS DE PAGO SECRETOS (Ocultos en un acordeón)
-with st.expander("🔓 Haz clic para ver datos de pago (Transferencia)"):
-    st.info("Realiza tu pago y luego llena el formulario de registro.")
-    st.code(f"""
-Beneficiario: {NOMBRE_PAGO}
-Banco: {BANCO_PAGO}
-Cuenta: {CUENTA_PAGO}
-CLABE: {CLABE_PAGO}
-    """, language="text")
-    st.caption("Puedes copiar los números usando el botón a la derecha del cuadro gris.")
+# 4. CAJA DE INFORMACIÓN (VERSION ANTIGUA FIJA)
+st.markdown(f"""
+<div class="info-box">
+    <h3 style='margin-top:0;'>📋 Información de Pago</h3>
+    <p><b>👤 Beneficiario:</b> {NOMBRE_PAGO}</p>
+    <p><b>🏦 Banco:</b> {BANCO_PAGO}</p>
+    <p><b>🔢 Cuenta:</b> {CUENTA_PAGO}</p>
+    <p><b>🔗 CLABE:</b> {CLABE_PAGO}</p>
+    <hr style='border-color:#333;'>
+    <p style='font-size: 0.9em; color: #bbb;'>Una vez realizado el pago, registra tus datos abajo para asignar tu boleto.</p>
+</div>
+""", unsafe_allow_html=True)
 
 if total_inscritos >= LIMITE:
     st.error("🚫 Lo sentimos, el cupo de la rifa está lleno.")
@@ -85,7 +87,7 @@ else:
     with st.expander("📝 Formulario de Registro", expanded=True):
         nombre_input = st.text_input("Nombre Completo:")
         
-        # 5. VALIDACIÓN DE TELÉFONO (Solo 10 números)
+        # 5. VALIDACIÓN DE TELÉFONO
         tel_input = st.text_input("Número de Teléfono:", max_chars=10, help="Ingresa tus 10 dígitos")
         
         if st.button("Registrar Participación"):
