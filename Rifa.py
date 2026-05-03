@@ -52,7 +52,7 @@ st.title("🎟️ Gran Rifa Solidaria")
 st.markdown(f"""
 <div class="info-box">
     <h3 style='margin-top:0;'>📋 Información de la Rifa</h3>
-    <p><b>Encargado:</b> Heliu Gahel Ciañez</p>
+    <p><b>Encargado:</b> lukario229</p>
     <p><b>Descripción:</b> Registra tus datos para participar. Los datos se sincronizan de forma segura en la nube.</p>
     <hr style='border-color:#444;'>
     <p><b>💳 Datos de Transferencia:</b><br>
