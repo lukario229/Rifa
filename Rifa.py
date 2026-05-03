@@ -17,7 +17,7 @@ except:
     st.stop()
 
 # 1. ESTÉTICA
-st.set_page_config(page_title="Registro de Rifa - Heliu", layout="centered", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Registro de Rifa - lukario229", layout="centered", initial_sidebar_state="collapsed")
 
 st.markdown("""
     <style>
@@ -74,7 +74,7 @@ st.markdown(f"""
     <p><b>🔢 Cuenta:</b> {CUENTA_PAGO}</p>
     <p><b>📱 Teléfono de contacto:</b> {TEL_PAGO}</p>
     <hr style='border-color:#333;'>
-    <p style='font-size: 0.9em; color: #bbb;'>Realiza tu pago y regístrate para recibir tu boleto.</p>
+    <p style='font-size: 0.9em; color: #bbb;'>AL registrate .</p>
 </div>
 """, unsafe_allow_html=True)
 
