@@ -17,7 +17,7 @@ except:
     st.stop()
 
 # 1. ESTÉTICA Y ELIMINACIÓN DE ANUNCIOS
-st.set_page_config(page_title="Registro de Rifa - Heliu", layout="centered", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Registro de Rifa - lukario229", layout="centered", initial_sidebar_state="collapsed")
 
 st.markdown("""
     <style>
@@ -75,20 +75,20 @@ st.markdown(f"""
     <p><b>👤 Beneficiario:</b> {NOMBRE_PAGO}</p>
     <p><b>🏦 Banco:</b> {BANCO_PAGO}</p>
     <p><b>🔢 Cuenta:</b> {CUENTA_PAGO}</p>
-    <p><b>🔗 CLABE:</b> {CLABE_PAGO}</p>
+    <p><b>📞 Telefono:</b> {Telefono}</p>
     <hr style='border-color:#333;'>
     <p style='font-size: 0.9em; color: #bbb;'>Una vez realizado el pago, registra tus datos abajo para asignar tu boleto.</p>
 </div>
 """, unsafe_allow_html=True)
 
-if total_inscritos >= LIMITE:
+if total_inscritos >= 50:
     st.error("🚫 Lo sentimos, el cupo de la rifa está lleno.")
 else:
     with st.expander("📝 Formulario de Registro", expanded=True):
         nombre_input = st.text_input("Nombre Completo:")
         
         # 5. VALIDACIÓN DE TELÉFONO
-        tel_input = st.text_input("Número de Teléfono:", max_chars=10, help="Ingresa tus 10 dígitos")
+        tel_input = st.text_input("Número de Teléfono:", max_chars=10, help="Ingresa su número")
         
         if st.button("Registrar Participación"):
             if not nombre_input:
