@@ -16,28 +16,25 @@ except:
     st.stop()
 
 # 1. ESTÉTICA
-st.set_page_config(page_title="Registro de Rifa - lukario229", layout="centered", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Rifa - lukario229", layout="centered")
 
 st.markdown("""
     <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    .stAppDeployButton {display:none;}
-    [data-testid="stSidebar"] { display: none; }
+    #MainMenu, footer, header {visibility: hidden;}
     .main { background-color: #000000; color: white; }
     .info-box { background-color: #1A1A1A; padding: 20px; border-radius: 10px; border: 1px solid #333; margin-bottom: 25px; }
-    .stButton>button { width: 100%; background-color: #2E2E2E; color: white; border: 1px solid #444; height: 3em; }
+    .stButton>button { width: 100%; background-color: #2E2E2E; color: white; border: 1px solid #444; }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. FUNCIONES
+# 2. FUNCIONES CON CACHÉ (Esto quita la lentitud)
+@st.cache_data(ttl=60) # Guarda los datos por 60 segundos
 def cargar_datos_nube():
     try:
-        response = requests.get(URL_API)
+        response = requests.get(URL_API, timeout=10)
         if response.status_code == 200:
             datos = response.json()
-            if len(datos) > 1:
+            if len(datos) > 0:
                 return pd.DataFrame(datos[1:], columns=datos[0])
         return pd.DataFrame(columns=["Nombre", "Teléfono", "Boleto", "Pago"])
     except:
@@ -46,32 +43,32 @@ def cargar_datos_nube():
 def guardar_en_nube(nombre, telefono, boleto):
     payload = {"Nombre": nombre, "Telefono": telefono, "Boleto": boleto}
     try:
-        res = requests.post(URL_API, json=payload)
+        # Enviamos el registro a Google
+        res = requests.post(URL_API, json=payload, timeout=15)
         return res.status_code == 200
     except:
         return False
 
-# --- LÓGICA DE GLOBOS ---
+# --- LOGICA ---
 if "mostrar_globos" not in st.session_state:
     st.session_state.mostrar_globos = False
 
-# --- DATOS ACTUALES ---
+# Cargamos datos
 df_actual = cargar_datos_nube()
 total_inscritos = len(df_actual)
 LIMITE_PARTICIPANTES = 50 
 
-# --- VISTA PÚBLICA ---
+# --- VISTA ---
 st.title("🎟️ Gran Rifa Solidaria")
 
-# Lanzar globos si el estado es verdadero
 if st.session_state.mostrar_globos:
     st.balloons()
-    st.session_state.mostrar_globos = False # Se apaga para la próxima recarga
+    st.toast("¡Registro exitoso!", icon="✅")
+    st.session_state.mostrar_globos = False
 
-st.write(f"### 📊 Cupos llenos: {total_inscritos} / {LIMITE_PARTICIPANTES}")
-st.progress(total_inscritos / LIMITE_PARTICIPANTES)
+st.write(f"### 📊 Cupos: {total_inscritos} / {LIMITE_PARTICIPANTES}")
+st.progress(min(total_inscritos / LIMITE_PARTICIPANTES, 1.0))
 
-# 4. CAJA DE INFORMACIÓN
 st.markdown(f"""
 <div class="info-box">
     <h3 style='margin-top:0;'>📋 Información de Pago</h3>
@@ -80,37 +77,41 @@ st.markdown(f"""
     <p><b>🔢 Cuenta:</b> {CUENTA_PAGO}</p>
     <p><b>📱 Teléfono de contacto:</b> {TEL_PAGO}</p>
     <hr style='border-color:#333;'>
-<p style='font-size: 0.9em; color: #bbb;'>
-1. <b>Realiza tu transferencia:</b> Usa los datos de cuenta de arriba.<br><br>
-2. <b>Concepto de pago:</b> Es vital que pongas tu nombre completo como concepto.<br><br>
-3. <b>Confirma tu registro:</b> Llena el formulario de abajo para generar tu número.<br><br>
-4. <b>Envía tu comprobante:</b> Manda la captura al número de contacto para activar tu boleto.
-</p>
+    <p style='font-size: 0.9em; color: #bbb;'>
+    1. Transfiere con tu <b>nombre</b> en el concepto.<br>
+    2. Regístrate aquí abajo.<br>
+    3. Manda captura al número de contacto.
+    </p>
 </div>
 """, unsafe_allow_html=True)
 
 if total_inscritos >= LIMITE_PARTICIPANTES:
     st.error("🚫 Cupo lleno.")
 else:
-    with st.expander("📝 Formulario de Registro", expanded=True):
+    with st.form("registro_form", clear_on_submit=True):
         nombre_input = st.text_input("Nombre Completo:")
-        tel_input = st.text_input("Número de Teléfono:", max_chars=10)
+        tel_input = st.text_input("Número de Teléfono (10 dígitos):", max_chars=10)
+        enviar = st.form_submit_button("Registrar Participación")
         
-        if st.button("Registrar Participación"):
+        if enviar:
             if nombre_input and len(tel_input) == 10:
-                with st.spinner("Registrando..."):
-                    while True:
-                        num = f"{random.randint(0, 9999):04d}" 
-                        if num not in df_actual['Boleto'].values:
-                            break
-                    
+                # Generar número único
+                usados = df_actual['Boleto'].tolist() if not df_actual.empty else []
+                while True:
+                    num = f"{random.randint(0, 9999):04d}"
+                    if num not in usados: break
+                
+                with st.spinner("Conectando con la nube..."):
                     if guardar_en_nube(nombre_input, tel_input, num):
                         st.session_state.mostrar_globos = True
+                        st.cache_data.clear() # Forzamos a que descargue la lista nueva
                         st.rerun()
+                    else:
+                        st.error("❌ Error de conexión. Revisa que tu Apps Script esté como 'Anyone'.")
             else:
-                st.warning("Revisa tus datos.")
+                st.warning("⚠️ Datos incompletos.")
 
-# --- ADMINISTRADOR ---
+# --- ADMIN ---
 st.write("---")
 with st.expander("🔐 Administrador"):
     clave = st.text_input("Password:", type="password")
