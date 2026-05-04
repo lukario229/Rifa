@@ -76,22 +76,24 @@ with st.expander("📝 Formulario de Registro", expanded=True):
         btn = st.form_submit_button("Registrar Participación")
         
         if btn:
-            if nombre_in and len(tel_in) == 10 and tel_in.isdigit():
-                if restantes > 0:
-                    while True:
-                        num = f"{random.randint(0, 9999):04d}"
-                        if num not in df_inicial['Boleto'].values: break
-                    
-                    if guardar_en_nube(nombre_in, tel_in, num):
-                        st.success(f"✅ ¡Éxito! Tu número es: **{num}**")
-                        st.balloons()
-                        st.cache_data.clear()
+            # Mensaje de carga mientras se procesa la información
+            with st.spinner("Cargando..."):
+                if nombre_in and len(tel_in) == 10 and tel_in.isdigit():
+                    if restantes > 0:
+                        while True:
+                            num = f"{random.randint(0, 9999):04d}"
+                            if num not in df_inicial['Boleto'].values: break
+                        
+                        if guardar_en_nube(nombre_in, tel_in, num):
+                            st.success(f"✅ ¡Éxito! Tu número es: **{num}**")
+                            st.balloons()
+                            st.cache_data.clear()
+                        else:
+                            st.error("Error al conectar con la base de datos.")
                     else:
-                        st.error("Error al conectar con la base de datos.")
+                        st.error("Cupo lleno.")
                 else:
-                    st.error("Cupo lleno.")
-            else:
-                st.warning("Revisa que el nombre esté completo y el teléfono tenga 10 números.")
+                    st.warning("Revisa que el nombre esté completo y el teléfono tenga 10 números.")
 
 # 4. Administrador
 st.write("---")
