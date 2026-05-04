@@ -3,112 +3,98 @@ import pandas as pd
 import random
 import requests
 
-# --- CONFIGURACIÓN DE SEGURIDAD (Se lee desde la pestaña de Secrets) ---
+# --- CONFIGURACIÓN DE SEGURIDAD ---
 try:
+    # Estas llaves DEBEN existir en tus Secrets de Streamlit Cloud
     URL_API = st.secrets["URL_API"]
-    NOMBRE_ENCARGADO = st.secrets["NOMBRE_PAGO"]
-    BANCO_RIFA = st.secrets["BANCO_PAGO"]
-    CUENTA_RIFA = st.secrets["CUENTA_PAGO"]
-    TEL_CONTACTO = st.secrets["TEL_PAGO"]
-except:
-    st.error("⚠️ Error: Faltan configurar Secretos en Streamlit (URL, Nombres o Datos de Pago).")
+    PASS_ADMIN = st.secrets["PASSWORD_ADMIN"]
+    ENCARGADO = st.secrets["NOMBRE_PAGO"]
+    BANCO = st.secrets["BANCO_PAGO"]
+    CUENTA = st.secrets["CUENTA_PAGO"]
+    CONTACTO = st.secrets["TEL_PAGO"]
+except KeyError as e:
+    st.error(f"⚠️ Error de Configuración: Falta la llave {e} en los Secrets.")
     st.stop()
 
-# 1. Configuración visual y estética táctica
-st.set_page_config(page_title="Registro de Rifa - Heliu", layout="centered", initial_sidebar_state="collapsed")
+# 1. Estética y Configuración Visual
+st.set_page_config(page_title="Rifa Solidaria - Heliu", layout="centered")
 
 st.markdown("""
     <style>
-    [data-testid="stSidebar"] { display: none; }
     .main { background-color: #000000; color: white; }
     .info-box { background-color: #1A1A1A; padding: 20px; border-radius: 10px; border: 1px solid #333; margin-bottom: 25px; }
-    .stButton>button { width: 100%; background-color: #2E2E2E; color: white; border: 1px solid #444; height: 3em; }
-    .stButton>button:hover { border-color: #ffffff; color: #ffffff; }
+    .stButton>button { width: 100%; background-color: #2E2E2E; color: white; border: 1px solid #444; }
+    #MainMenu, footer, header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Funciones de conexión
+# 2. Funciones de Datos
+@st.cache_data(ttl=60)
 def cargar_datos_nube():
     try:
-        response = requests.get(URL_API)
+        response = requests.get(URL_API, timeout=10)
         if response.status_code == 200:
             datos = response.json()
             if len(datos) > 1:
                 return pd.DataFrame(datos[1:], columns=datos[0])
-        return pd.DataFrame(columns=["Nombre", "Teléfono", "Boleto", "Pago"])
+        return pd.DataFrame(columns=["Nombre", "Teléfono", "Boleto"])
     except:
-        return pd.DataFrame(columns=["Nombre", "Teléfono", "Boleto", "Pago"])
+        return pd.DataFrame(columns=["Nombre", "Teléfono", "Boleto"])
 
 def guardar_en_nube(nombre, telefono, boleto):
     payload = {"Nombre": nombre, "Telefono": telefono, "Boleto": boleto}
     try:
-        res = requests.post(URL_API, json=payload)
+        res = requests.post(URL_API, json=payload, timeout=15)
         return res.status_code == 200
     except:
         return False
 
-# --- LÓGICA DE CONTADOR ---
+# 3. Lógica del Contador
 df_inicial = cargar_datos_nube()
-total_actual = len(df_inicial)
 LIMITE = 50
-restantes = LIMITE - total_actual
+restantes = LIMITE - len(df_inicial)
 
 # --- VISTA PÚBLICA ---
 st.title("🎟️ Gran Rifa Solidaria")
-
-# NUEVO CONTADOR VISUAL
 st.write(f"### 📊 Boletos disponibles: **{restantes}** / {LIMITE}")
-st.progress(total_actual / LIMITE)
+st.progress(len(df_inicial) / LIMITE)
 
 st.markdown(f"""
 <div class="info-box">
-    <h3 style='margin-top:0;'>📋 Información de la Rifa</h3>
-    <p><b>Encargado:</b> {NOMBRE_ENCARGADO}</p>
-    <p><b>Descripción:</b> Registra tus datos para participar. Los datos se sincronizan de forma segura.</p>
-    <hr style='border-color:#444;'>
-    <p><b>💳 Datos de Transferencia:</b><br>
-    <b>Banco:</b> {BANCO_RIFA}<br>
-    <b>Cuenta/CLABE:</b> {CUENTA_RIFA}<br>
-    <b>Contacto:</b> {TEL_CONTACTO}</p>
+    <h3 style='margin-top:0;'>📋 Información de Pago</h3>
+    <p><b>Encargado:</b> {ENCARGADO}</p>
+    <p><b>Banco:</b> {BANCO}</p>
+    <p><b>Cuenta/CLABE:</b> {CUENTA}</p>
+    <p><b>WhatsApp:</b> {CONTACTO}</p>
 </div>
 """, unsafe_allow_html=True)
 
 with st.expander("📝 Formulario de Registro", expanded=True):
-    nombre_input = st.text_input("Nombre Completo:")
-    tel_input = st.text_input("Número de Teléfono:", max_chars=10)
-    
-    if st.button("Registrar Participación"):
-        if nombre_input and tel_input:
-            with st.spinner("Conectando con la base de datos..."):
-                df_actual = cargar_datos_nube()
-                
-                if len(df_actual) < LIMITE:
+    with st.form("registro_form", clear_on_submit=True):
+        nombre_in = st.text_input("Nombre Completo:")
+        tel_in = st.text_input("Teléfono (10 dígitos):", max_chars=10)
+        btn = st.form_submit_button("Registrar Participación")
+        
+        if btn:
+            if nombre_in and len(tel_in) == 10 and tel_in.isdigit():
+                if restantes > 0:
                     while True:
                         num = f"{random.randint(0, 9999):04d}"
-                        if num not in df_actual['Boleto'].values:
-                            break
+                        if num not in df_inicial['Boleto'].values: break
                     
-                    exito = guardar_en_nube(nombre_input, tel_input, num)
-                    
-                    if exito:
-                        st.success(f"✅ ¡Registro exitoso! Tu número es: **{num}**")
+                    if guardar_en_nube(nombre_in, tel_in, num):
+                        st.success(f"✅ ¡Éxito! Tu número es: **{num}**")
                         st.balloons()
-                        st.rerun() # Recargar para actualizar el contador
+                        st.cache_data.clear()
                     else:
-                        st.error("Error al conectar con la nube.")
+                        st.error("Error al conectar con la base de datos.")
                 else:
-                    st.error("Lo sentimos, el cupo de la rifa está lleno.")
-        else:
-            st.warning("Por favor, completa todos los campos para participar.")
+                    st.error("Cupo lleno.")
+            else:
+                st.warning("Revisa que el nombre esté completo y el teléfono tenga 10 números.")
 
-# --- PANEL DE CONTROL ADMINISTRADOR ---
+# 4. Administrador
 st.write("---")
 with st.expander("🔐 Acceso Administrador"):
-    clave = st.text_input("Contraseña de seguridad:", type="password")
-    if clave == st.secrets["PASSWORD_ADMIN"]:
-        st.subheader("📊 Gestión de Participantes")
-        if not df_inicial.empty:
-            st.dataframe(df_inicial, use_container_width=True)
-            st.info(f"Total de registros: {len(df_inicial)}")
-        else:
-            st.info("No hay registros detectados en la nube.")
+    if st.text_input("Password:", type="password") == PASS_ADMIN:
+        st.dataframe(df_inicial, use_container_width=True)
